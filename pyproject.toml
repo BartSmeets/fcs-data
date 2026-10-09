@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fcs-data"
+version = "0.0.1"
+description = "Package for reading and processing FCS data."
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [
+    {name = "Bart J. B. Smeets", email = "bart.smeets.qsp@kuleuven.be"}
+]
+
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "lmfit",
+]
+
+[project.urls]
+Repository = "https://github.com/BartSmeets/fcs-data"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
