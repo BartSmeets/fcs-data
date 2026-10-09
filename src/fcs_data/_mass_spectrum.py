@@ -110,3 +110,29 @@ class MassSpec:
             return model.fit(y, x=x)
         else:
             return model.fit(y, model_params, x=x)
+
+    def integrate(self, mass_range: tuple[float, float]) -> float:
+        """
+        Intergate mass spectrum using the composite trapezoid rule, see `np.trapezoid`.
+
+        Parameters
+        ----------
+        mass_range: tuple[float, float]
+            Mass range to intergate over.
+
+        Returns
+        -------
+        float:
+            Integral
+            
+        """
+        # Set range
+        if mass_range[0] >= mass_range[1]:
+            raise ValueError(f"The range should be ascending, now {mass_range}.")
+        
+        mask = (self.mass >= mass_range[0]) & (self.mass <= mass_range[1])            
+        x = self.mass[mask]
+        y = self.voltage[mask]
+
+        return np.trapezoid(y, x)
+        
