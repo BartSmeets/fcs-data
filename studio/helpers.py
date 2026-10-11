@@ -1,28 +1,32 @@
-"""Data loading and saving for the FCS Visualiser.
+"""
+Data loading and saving for the FCS Visualiser.
  
 Functions here take an AppState instance explicitly rather than reaching into
 st.session_state, which keeps them testable outside of a running Streamlit
 session (e.g. construct an AppState and call gen_df(state) in plain pytest).
 """
- 
+from __future__ import annotations
+
 import os
 import re
-from glob import glob
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
-import streamlit as st
 
-from analysis import Data
-
-from .state import AppState
+if TYPE_CHECKING:
+    from fcs_studio.dataset._app_state import AppState
 
 FILE_EXTENSION = "*.npy"
 
+__all__ = [
+    'basename',
+    'list_data_files',
+    ]
 
-def list_data_files(directory: str) -> list[str]:
-    """Return full paths of all data files in `directory`."""
-    return glob(os.path.join(directory, FILE_EXTENSION))
+def list_data_files(directory: Path) -> list[Path]:
+    """Return all data files in directory."""
+    return list(directory.glob(FILE_EXTENSION))
 
 
 def basename(path: str) -> str:
@@ -91,41 +95,6 @@ def get_all_data(state: AppState):
 
     files_df = pd.DataFrame(file_records)
     return files_df
-
-
-def gen_df(state: AppState) -> None:
-    """Rebuild state.dataframe from the currently selected files."""
-    init_param = [state.a, state.k]
-    rows = []
- 
-    for name in state.data:
-        path = full_path(state, name)
-        try:
-            data = Data(path, init_param)
-        except OSError:
-            st.warning(f"Could not read '{name}' — skipping.")
-            continue
- 
-        df = pd.DataFrame(
-            {
-                "time": data.time,
-                "mass": data.mass,
-                "voltage": data.voltage,
-                "name": [name] * len(data.time),
-            }
-        )
- 
-        if state.baseline is not None:
-            data.baseline_correction(state.lam, state.multiplier, state.baseline)
-            df["baseline"] = data.baseline
- 
-        rows.append(df)
- 
-    state.dataframe = (
-        pd.concat(rows, ignore_index=True)
-        if rows
-        else pd.DataFrame({"time": [], "mass": [], "voltage": [], "name": []})
-    )
 
 
 def gen_csv(state: AppState, idx):

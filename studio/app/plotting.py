@@ -4,7 +4,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from .state import AppState
+from ..state.app_state import AppState
 
 
 def generate_fig(state: AppState, spectrum_type: str, pointer: bool, pointer_value: float):

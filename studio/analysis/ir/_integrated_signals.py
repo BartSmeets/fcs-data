@@ -3,7 +3,7 @@ import streamlit as st
 from scipy.integrate import trapezoid
 from scipy.signal import find_peaks
 
-from app.state import AppState
+from studio.state.app_state import AppState
 
 from .._load_data import Data
 

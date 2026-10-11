@@ -1,6 +1,6 @@
 import numpy as np
 
-from app.state import AppState
+from studio.state.app_state import AppState
 
 
 def target_mass(state: AppState):

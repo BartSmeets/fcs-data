@@ -12,6 +12,9 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from ._builders import build_dataframe
+from ._plotters import plot_spec
+
 
 def _empty_dataframe() -> pd.DataFrame:
     return pd.DataFrame({"time": [], "mass": [], "voltage": [], "name": []})
@@ -31,16 +34,12 @@ class IntegrationMassSettings:
 
 @dataclass
 class AppState:
-    directory: str
     a: float
     k: float
 
-    data: list[str] = field(default_factory=list)
-    old_data: list[str] = field(default_factory=list)
-
-    baseline: str | None = None
-    lam: float = 1e9
-    multiplier: float = 1.0
+    directory: Path = field(default_factory=Path.home)
+    data_files: list[str] = field(default_factory=list)
+    data_files_old: list[str] = field(default_factory=list)
 
     dataframe: pd.DataFrame = field(default_factory=_empty_dataframe)
     figure: object = field(default_factory=_empty_figure)
@@ -51,6 +50,16 @@ class AppState:
     ioff = None
     ion = None
 
+    def build_dataframe(self) -> None:
+        """
+        Build DataFrame from selected files and rebuild `state.dataframe`
+    
+        """
+        build_dataframe(self)
+
+    def plot_spectrum(self, spectrum_type: str, pointer: bool | None = None, pointer_value: float = 0.0):
+        plot_spec(self, spectrum_type, pointer, pointer_value)
+
 
 def get_state(defaults: dict) -> AppState:
     """
@@ -59,8 +68,7 @@ def get_state(defaults: dict) -> AppState:
     """
     if "state" not in st.session_state:
         st.session_state["state"] = AppState(
-            directory=Path(defaults["directory"]),
-            a=defaults["calibration"]["a"],
-            k=defaults["calibration"]["k"],
+            a=defaults["last_used"]["a"],
+            k=defaults["last_used"]["k"],
         )
     return st.session_state["state"]
