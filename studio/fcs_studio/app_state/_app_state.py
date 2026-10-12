@@ -11,9 +11,12 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import toml
 
 from ._builders import build_dataframe
 from ._plotters import plot_spec
+
+CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
 def _empty_dataframe() -> pd.DataFrame:
@@ -61,14 +64,18 @@ class AppState:
         plot_spec(self, spectrum_type, pointer, pointer_value)
 
 
-def get_state(defaults: dict) -> AppState:
+def get_state() -> AppState:
     """
     Return the single AppState for this session, creating it on first run.
     
     """
     if "state" not in st.session_state:
+        with open(CONFIG_DIR / 'calibration.toml', 'r') as f:
+            defaults = toml.load(f)
+
         st.session_state["state"] = AppState(
-            a=defaults["last_used"]["a"],
-            k=defaults["last_used"]["k"],
+            a = defaults["last_used"]["a"],
+            k = defaults["last_used"]["k"],
         )
+        
     return st.session_state["state"]
