@@ -1,18 +1,21 @@
-from __future__ import annotations
-
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import streamlit as st
+import toml
+
+from fcs_studio.app_state import get_state
+from fcs_studio.tools.calibration import apply
 
 from .folder_dialog import select_folder
 
-if TYPE_CHECKING:
-    from fcs_studio.app_state._app_state import AppState
+CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
-def directory(state: AppState):
+def directory():
+    state = get_state()
+    
     with st.sidebar:
+        st.title('Data Directory')
         col1, col2 = st.columns(2)
 
         with col1:
@@ -29,12 +32,30 @@ def directory(state: AppState):
         st.session_state.setdefault("dir_input", str(state.directory))
         state.directory = Path(st.text_input("Directory", key="dir_input"))
 
+        st.divider()
 
-def calibration(state: AppState):
-    with st.sidebar, st.container(border=True):
-        st.write("### Mass Calibration")
+
+def calibration():
+    # Settings
+    state = get_state()
+    with open(CONFIG_DIR / 'calibration.toml', 'r') as f:
+        defaults = toml.load(f)
+
+    options = ["last_used"] + list(reversed(
+        [k for k in defaults if k != "last_used"]
+    ))
+
+    with st.sidebar:
+        st.title("Mass Calibration")
         st.write("$m = a(t-k)^2$")
-    
+
+        # Config loading
+        label = st.selectbox('Configuration label', options)
+        
+        if st.button("Load"):
+            apply(label)
+
+        # Manual Input
         col1, col2 = st.columns(2)
         with col1:
             state.a = st.number_input(
@@ -42,4 +63,11 @@ def calibration(state: AppState):
             )
         with col2:
             state.k = st.number_input("k", step=1e-8, value=state.k, format="%.8f")
-        st.button("Apply", on_click=state.build_dataframe())
+    
+        if st.button("Apply"):
+            apply('manual', (state.a, state.k))
+
+        # Finalise
+        state.build_dataframe()
+
+        st.divider()

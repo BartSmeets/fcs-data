@@ -25,7 +25,7 @@ def plot_spec(state: AppState, spectrum_type: str, pointer: bool, pointer_value:
  
     if spectrum_type == "time":
         fig = px.line(state.dataframe, x="time", y="voltage", color="name")
-        prepare_axes(fig, "time (us)", "accumulated voltage (V)")
+        prepare_axes(fig, "time (μs)", "accumulated voltage (V)")
     else:  # mass
         fig = px.line(state.dataframe, x="mass", y="voltage", color="name")
         prepare_axes(fig, "mass (amu)", "accumulated voltage (V)")
