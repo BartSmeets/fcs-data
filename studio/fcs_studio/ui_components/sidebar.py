@@ -29,8 +29,13 @@ def directory():
             st.button("Refresh Files")
 
         # initialize the widget value once
-        st.session_state.setdefault("dir_input", str(state.directory))
-        state.directory = Path(st.text_input("Directory", key="dir_input"))
+        directory_text = st.text_input("Directory", value=str(state.directory))
+
+        if directory_text != str(state.directory):
+            state.directory = Path(directory_text)
+
+        if directory_text:
+            state.directory = Path(directory_text)
 
         st.divider()
 
