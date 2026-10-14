@@ -7,6 +7,8 @@ fit:
     Fit for calibration constants
 plot:
     Plot fitting result
+apply:
+    Apply calibration constants
 
 """
 from __future__ import annotations
@@ -55,10 +57,18 @@ def fit(df: DataFrame) -> np.ndarray:
     return popt
 
 
-def plot(df: DataFrame, popt: np.ndarray):
+def plot(df: DataFrame, popt: tuple[float, float]) -> None:
     """
     Plot the data and the fit result.
-    
+
+    Parameters
+    ----------
+    df: DataFrame
+        Pandas dataframe of the data.
+        Must have a "Time" and "Mass" column.
+    popt: tuple
+        Optimal parameters from fit.
+
     """
     data = df.dropna(subset=["Time", "Mass"])
 
@@ -84,6 +94,20 @@ def plot(df: DataFrame, popt: np.ndarray):
 
 
 def apply(label: str, popt: tuple[float, float] | None = None) -> None:
+    """
+    Apply calibration constants,
+    and store them in `calibration.toml` if new parameters are provided with `popt`.
+
+    Parameters
+    ----------
+    label: str
+        Label for storing or finding the constants in `calibration.toml`
+    popt: tuple[float, float] | None, default=None
+        Tuple containing the calibration constants.
+        If `popt is None` the constants are read from `calibration.toml`
+        If `popt is not None`, `popt` is stored in `calibration.toml`.
+
+    """
     if not label.strip():
         st.warning("No label provided...")
         return

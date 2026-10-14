@@ -15,6 +15,11 @@ def build_dataframe(state: AppState):
     """
     Build DataFrame from selected files and rebuild `state.dataframe`
 
+    Parameters
+    ----------
+    state: AppState
+        Session state of the application
+
     """
     init_param = [state.a, state.k]
     rows = []

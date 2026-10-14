@@ -15,6 +15,10 @@ CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
 def main():
+    """
+    Build the home page
+    
+    """
     # Setup
     st.title("FCS Studio")
 

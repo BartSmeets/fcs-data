@@ -1,10 +1,19 @@
+"""
+Module containing the sidebar elements:
+
+* directory():
+    Selection panel for selecting the data directory
+* calibration():
+    Panel for setting the calibration constants
+
+"""
 from pathlib import Path
 
 import streamlit as st
 import toml
 
 from fcs_studio.app_state import get_state
-from fcs_studio.tools.calibration import apply
+from fcs_studio.tools.calibration_tools import apply
 
 from .folder_dialog import select_folder
 

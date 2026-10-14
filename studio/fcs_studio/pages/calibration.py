@@ -2,11 +2,15 @@ import pandas as pd
 import streamlit as st
 
 from fcs_studio.app_state import get_state
-from fcs_studio.tools import calibration
+from fcs_studio.tools import calibration_tools
 from fcs_studio.ui_components import sidebar, user_input
 
 
 def main():
+    """
+    Build the Calibration tool page
+
+    """
     st.title("Calibration Tool")
 
     state = get_state()
@@ -33,8 +37,8 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             st.header("Fit Result")
-            popt = calibration.fit(edited_df)
-            calibration.plot(edited_df, popt)
+            popt = calibration_tools.fit(edited_df)
+            calibration_tools.plot(edited_df, popt)
 
         with col2:
             st.header('Export')
@@ -49,4 +53,4 @@ def main():
 
             if submitted:
                 st.write(str(popt), str(label))
-                calibration.apply(label, popt)
+                calibration_tools.apply(label, popt)

@@ -1,3 +1,10 @@
+"""
+Module for reusable user input widgets
+
+* data_selection:
+    Generates a `st.multiselect` for selecting the data files
+
+"""
 import streamlit as st
 
 from fcs_studio.app_state import get_state

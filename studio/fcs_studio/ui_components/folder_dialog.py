@@ -3,6 +3,21 @@ import sys
 
 
 def select_folder(initial_dir: str = "") -> str | None:
+    """
+    Select Folder
+
+    Open a new thread with a tkinter filedialog for selecting the data directory.
+
+    Parameters
+    ----------
+    initial_dir: str, default=""
+        Directory that opens when the filedialog is generated.
+
+    Returns
+    -------
+    directory: str | None
+
+    """
     code = (
         "import tkinter as tk\n"
         "from tkinter import filedialog\n"

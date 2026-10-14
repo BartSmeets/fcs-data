@@ -9,9 +9,21 @@ if TYPE_CHECKING:
     from fcs_studio.app_state._app_state import AppState
 
 
-def plot_spec(state: AppState, spectrum_type: str, pointer: bool, pointer_value: float):
+def plot_spec(state: AppState, spectrum_type: str, pointer: bool, pointer_value: float) -> None:
     """
     Plot the mass/time spectrum.
+
+    Parameters
+    ----------
+    state: AppState
+        Session state of the application
+    spectrum_type: str ["time" or "mass"]
+        Determines the horizontal axis type.
+    pointer: bool
+        Should a vertical line be plotter as pointer?
+    pointer_value: float
+        Position of the pointer on the horizontal axis.
+
     """
     def prepare_axes(fig, xlabel, ylabel):
         fig.update_layout(
