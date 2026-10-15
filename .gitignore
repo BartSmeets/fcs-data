@@ -1,3 +1,6 @@
+# Project
+studio/fcs_studio/config/calibration/calibration.toml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
