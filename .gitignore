@@ -1,5 +1,5 @@
 # Project
-studio/fcs_studio/config/calibration/calibration.toml
+studio/fcs_studio/config/calibration.toml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -221,3 +221,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
