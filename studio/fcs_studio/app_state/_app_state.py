@@ -5,6 +5,7 @@ A single AppState instance lives in st.session_state['app_state'] and is passed 
 
 """
 
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -70,12 +71,34 @@ def get_state() -> AppState:
     
     """
     if "state" not in st.session_state:
-        with open(CONFIG_DIR / 'calibration.toml', 'r') as f:
-            defaults = toml.load(f)
-
+        configs = _read_configs()
         st.session_state["state"] = AppState(
-            a = defaults["last_used"]["a"],
-            k = defaults["last_used"]["k"],
+            a = configs["last_used"]["a"],
+            k = configs["last_used"]["k"],
         )
         
     return st.session_state["state"]
+
+
+def _read_configs() -> dict:
+    """
+    Read the configuration files
+
+    Returns
+    -------
+    defaults: dict
+        Configuration settings
+    """
+    config_file = CONFIG_DIR / 'calibration.toml'
+    config_example = CONFIG_DIR / 'calibration.toml.example'
+
+    try:
+        with open(config_file, 'r') as f:
+            configs = toml.load(f)
+    except FileNotFoundError:
+        if not config_file.exists():
+            shutil.copy(config_example, config_file)
+
+            with open(config_file, "r") as f:
+                configs = toml.load(f)
+    return configs

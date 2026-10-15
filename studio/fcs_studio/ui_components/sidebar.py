@@ -15,12 +15,23 @@ import toml
 from fcs_studio.app_state import get_state
 from fcs_studio.tools.calibration_tools import apply
 
-from .folder_dialog import select_folder
+from .user_input import select_folder
 
 CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
 def directory():
+    """
+    Selection panel for selecting the data directory
+    
+    Contains:
+    * Select button linked to `select_folder`
+    * Refresh button
+    * Text element that reads the directory
+
+    Updates session state
+
+    """
     state = get_state()
     
     with st.sidebar:
@@ -50,6 +61,17 @@ def directory():
 
 
 def calibration():
+    """
+    Panel for calibration details
+
+    Contains:
+    * Selectbox for label in `calibration.toml`
+    * Readout of the current calibration constants
+    * Expander for manual input
+
+    Updates session state
+
+    """
     # Settings
     state = get_state()
     with open(CONFIG_DIR / 'calibration.toml', 'r') as f:
@@ -60,26 +82,34 @@ def calibration():
     ))
 
     with st.sidebar:
-        st.title("Mass Calibration")
-        st.write("$m = a(t-k)^2$")
+        st.title("Mass Calibration: $m = a(t-k)^2$")
+
+        st.metric("a", f'{state.a:.5f} amu/μs²')
+        st.metric("k", f'{state.k:.5f} μs')
 
         # Config loading
-        label = st.selectbox('Configuration label', options)
-        
-        if st.button("Load"):
-            apply(label)
+        col1, col2 = st.columns([4,1])
+        with col1:
+            label = st.selectbox('Configuration label', options)
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True) # Space the button
+            if st.button("Load"):
+                apply(label)
+                st.rerun()
 
         # Manual Input
-        col1, col2 = st.columns(2)
-        with col1:
-            state.a = st.number_input(
-                "a", min_value=0.0, step=1e-8, value=state.a, format="%.8f"
-            )
-        with col2:
-            state.k = st.number_input("k", step=1e-8, value=state.k, format="%.8f")
-    
-        if st.button("Apply"):
-            apply('manual', (state.a, state.k))
+        with st.expander("Manual Input"):
+            col1, col2 = st.columns(2)
+            with col1:
+                state.a = st.number_input(
+                    "a", min_value=0.0, step=1e-8, value=state.a, format="%.8f"
+                )
+            with col2:
+                state.k = st.number_input("k", step=1e-8, value=state.k, format="%.8f")
+        
+            if st.button("Apply"):
+                apply('manual', (state.a, state.k))
+                st.rerun()
 
         # Finalise
         state.build_dataframe()

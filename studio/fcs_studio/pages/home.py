@@ -4,14 +4,10 @@ FCS Studio
 Streamlit app for browsing, calibrating and plotting FCS data.
 
 """
-from pathlib import Path
-
 import streamlit as st
 
 from fcs_studio.app_state import get_state
 from fcs_studio.ui_components import sidebar, user_input
-
-CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
 def main():

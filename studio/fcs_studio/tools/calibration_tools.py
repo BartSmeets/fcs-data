@@ -13,6 +13,7 @@ apply:
 """
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -108,26 +109,26 @@ def apply(label: str, popt: tuple[float, float] | None = None) -> None:
         If `popt is not None`, `popt` is stored in `calibration.toml`.
 
     """
-    if not label.strip():
-        st.warning("No label provided...")
-        return
-    
     state = get_state()
     with open(CONFIG_DIR / 'calibration.toml', 'r') as f:
         defaults = toml.load(f)
 
-    if popt is None:
-        # Retreive values from label
-        try:
-            popt = (defaults[label]['a'], defaults[label]['k'])
-        except KeyError:
-            st.error(f'Label {label} is not registered in `calibration.toml`')
-    else:
+    if popt is not None:
+        date = datetime.today().strftime("%Y-%m-%d")  # noqa: DTZ002
+        suffix = label.strip()
+        label = f"{date}_{suffix}" if suffix else date
+
         # Log new values to label
         defaults[label] = {
             'a': float(popt[0]),
             'k': float(popt[1])
             }
+    else:
+        # Retreive values from label
+        try:
+            popt = (defaults[label]['a'], defaults[label]['k'])
+        except KeyError:
+            st.error(f'Label {label} is not registered in `calibration.toml`')      
 
     # Update last used
     defaults['last_used']['a'] = float(popt[0])
