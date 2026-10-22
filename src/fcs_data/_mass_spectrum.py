@@ -4,6 +4,7 @@ import numpy as np
 from lmfit import Model, Parameters
 from lmfit.model import ModelResult
 from pybaselines import Baseline
+from scipy.signal import find_peaks
 
 
 class MassSpec:
@@ -34,6 +35,9 @@ class MassSpec:
         Performs mass calibration and updates `self.mass`.
     fit(model, model_params, mass_range):
         Performs a fit of the `model` to the data.
+    find_peaks(prominence, height, mass_range):
+        Find peaks in the spectrum
+
     """
     def __init__(self, file: Path, init_params: tuple[float, float]):
         """
@@ -99,17 +103,12 @@ class MassSpec:
 
         """
         # Set range
-        if mass_range[0] >= mass_range[1]:
-            raise ValueError(f"The range should be ascending, now {mass_range}.")
-        
-        mask = (self.mass >= mass_range[0]) & (self.mass <= mass_range[1])            
-        x = self.mass[mask]
-        y = self.voltage[mask]
+        mass, voltage = self._apply_mass_range(mass_range)
 
         if model_params is None:
-            return model.fit(y, x=x)
+            return model.fit(voltage, x=mass)
         else:
-            return model.fit(y, model_params, x=x)
+            return model.fit(voltage, model_params, x=mass)
 
     def integrate(self, mass_range: tuple[float, float]) -> float:
         """
@@ -127,6 +126,72 @@ class MassSpec:
             
         """
         # Set range
+        mass, voltage = self._apply_mass_range(mass_range)
+
+        return np.trapezoid(voltage, mass)
+
+    def find_peaks(
+            self,
+            mass_range: tuple[float, float] | None = None,
+            prominence: float | None = None, 
+            height: float | None = None
+        ) -> tuple[np.ndarray, np.ndarray]:
+        # TODO: Add mass range 
+        """
+        Extract the peaks from the MassSpec
+
+        Parameters
+        ----------
+        mass_range: tuple[float, float] | None, default=None
+            Mass range to look for peaks in
+        prominence: float | None, default=None
+            Prominence, see `scipy.signal.find_peaks()`.
+            If `None`, a prominence is estimated from the noise level
+        height: float | None, default=None
+            Height, see `scipy.signal.find_peaks()`
+
+            
+        Returns
+        -------
+        mass: np.ndarray
+            Array containing the mass values of the found peaks
+        voltage: np.ndarray
+            Array containing the intensities of the found peaks
+
+        """
+        if mass_range is None:
+            mass, voltage = self.mass, self.voltage
+        else:
+            mass, voltage = self._mass_range(mass_range)
+
+        if prominence is None:
+            # robust noise estimate -> threshold at ~5 sigma
+            noise = np.median(np.abs(voltage - np.median(voltage))) * 1.4826
+            prominence = 5 * noise
+        idx, _ = find_peaks(voltage, prominence=prominence, height=height)
+        return mass[idx], voltage[idx]
+
+        
+    def _apply_mass_range(
+            self, 
+            mass_range: tuple[float, float],
+        ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Apply mass range filter
+
+        Parameters
+        ----------
+        mass_range: tuple[float, float]
+            Mass range to apply
+
+        Returns
+        -------
+        x: np.ndarray
+            Filtered mass array
+        y: np.ndarray
+            Filtered mass array
+            
+        """
         if mass_range[0] >= mass_range[1]:
             raise ValueError(f"The range should be ascending, now {mass_range}.")
         
@@ -134,5 +199,4 @@ class MassSpec:
         x = self.mass[mask]
         y = self.voltage[mask]
 
-        return np.trapezoid(y, x)
-        
+        return x, y
