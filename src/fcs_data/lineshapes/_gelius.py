@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def ulrik(
+def gelius(
         x: np.ndarray,
         amp: float, 
         center: float, 
