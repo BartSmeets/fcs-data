@@ -4,7 +4,7 @@ import numpy as np
 from lmfit import Model, Parameters
 from lmfit.model import ModelResult
 from pybaselines import Baseline
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, peak_widths
 
 
 class MassSpec:
@@ -35,8 +35,10 @@ class MassSpec:
         Performs mass calibration and updates `self.mass`.
     fit(model, model_params, mass_range):
         Performs a fit of the `model` to the data.
-    find_peaks(prominence, height, mass_range):
+    find_peaks(mass_range, prominence, **kwargs):
         Find peaks in the spectrum
+    mass_filter(mass_range)
+        Apply mass range filter
 
     """
     def __init__(self, file: Path, init_params: tuple[float, float]):
@@ -103,7 +105,7 @@ class MassSpec:
 
         """
         # Set range
-        mass, voltage = self._apply_mass_range(mass_range)
+        mass, voltage = self.mass_filter(mass_range)
 
         if model_params is None:
             return model.fit(voltage, x=mass)
@@ -126,53 +128,61 @@ class MassSpec:
             
         """
         # Set range
-        mass, voltage = self._apply_mass_range(mass_range)
+        mass, voltage = self.mass_filter(mass_range)
 
         return np.trapezoid(voltage, mass)
 
     def find_peaks(
-            self,
-            mass_range: tuple[float, float] | None = None,
-            prominence: float | None = None, 
-            height: float | None = None
-        ) -> tuple[np.ndarray, np.ndarray]:
-        # TODO: Add mass range 
-        """
-        Extract the peaks from the MassSpec
-
-        Parameters
-        ----------
-        mass_range: tuple[float, float] | None, default=None
-            Mass range to look for peaks in
-        prominence: float | None, default=None
-            Prominence, see `scipy.signal.find_peaks()`.
-            If `None`, a prominence is estimated from the noise level
-        height: float | None, default=None
-            Height, see `scipy.signal.find_peaks()`
-
+                self,
+                mass_range: tuple[float, float] | None,
+                prominence: float | None = None,
+                **kwargs,
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict]:
+            """
+            Shared peak detection
+    
+            Paramters
+            ---------
+            mass_range: tuple[float, float]
+                Mass range to apply
+            prominence: float | None, default=None
+                Prominence, see `scipy.signal.find_peaks()`.
+                If `None`, a prominence is estimated from the noise level
+            **kwargs
+                Passed to `scipy.signal.find_peaks()` 
+                (e.g. height, distance, width)
+    
+            Returns
+            -------
+            mass, voltage : np.ndarray
+                The (optionally range-restricted) spectrum that was searched.
+            fwhm : np.ndarray
+                Peak widths
+            props : dict
+                Properties from `scipy.signal.find_peaks` (incl. prominences and bases).
             
-        Returns
-        -------
-        mass: np.ndarray
-            Array containing the mass values of the found peaks
-        voltage: np.ndarray
-            Array containing the intensities of the found peaks
+            """
+            if mass_range is None:
+                mass, voltage = self.mass, self.voltage
+            else:
+                mass, voltage = self._apply_mass_range(mass_range)
+    
+            if prominence is None:
+                # robust noise estimate -> threshold at ~5 sigma
+                noise = np.median(np.abs(voltage - np.median(voltage))) * 1.4826
+                prominence = 5 * noise
+            idx, props = find_peaks(voltage, prominence=prominence, **kwargs)
 
-        """
-        if mass_range is None:
-            mass, voltage = self.mass, self.voltage
-        else:
-            mass, voltage = self._mass_range(mass_range)
+            _, _, left, right = peak_widths(
+                voltage, idx, rel_height=0.5,
+                prominence_data = (props["prominences"], props["left_bases"], props["right_bases"])
+                )
+            # left/right are fractional sample positions -> convert to mass units
+            samples = np.arange(mass.size)
+            fwhm = np.interp(right, samples, mass) - np.interp(left, samples, mass)
+            return mass[idx], voltage[idx], fwhm, props
 
-        if prominence is None:
-            # robust noise estimate -> threshold at ~5 sigma
-            noise = np.median(np.abs(voltage - np.median(voltage))) * 1.4826
-            prominence = 5 * noise
-        idx, _ = find_peaks(voltage, prominence=prominence, height=height)
-        return mass[idx], voltage[idx]
-
-        
-    def _apply_mass_range(
+    def mass_filter(
             self, 
             mass_range: tuple[float, float],
         ) -> tuple[np.ndarray, np.ndarray]:
@@ -200,3 +210,5 @@ class MassSpec:
         y = self.voltage[mask]
 
         return x, y
+
+    
