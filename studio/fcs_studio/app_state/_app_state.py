@@ -14,8 +14,8 @@ import plotly.express as px
 import streamlit as st
 import toml
 
-from ._builders import build_dataframe
-from ._plotters import plot_spec
+from ._builders import build_dataframe, build_ir
+from ._plotters import plot_ir, plot_spec
 
 CONFIG_DIR = Path(__file__).parent.parent / "config"
 
@@ -49,7 +49,7 @@ class AppState:
     figure: object = field(default_factory=_empty_figure)
 
     intmass: IntegrationMassSettings | None = None
-    files_df = None
+    ir_df = None
     target_masses = None
     ioff = None
     ion = None
@@ -61,8 +61,62 @@ class AppState:
         """
         build_dataframe(self)
 
-    def plot_spectrum(self, spectrum_type: str, pointer: bool | None = None, pointer_value: float = 0.0):
+    def build_ir(
+            self, 
+            prominence: float | None = None,
+            tol: float = 0.5,
+            **kwargs,
+        ):
+        """
+        Build IR Spectrum from all files in selected directory
+        and update session state
+    
+        Parameters
+        ----------
+        state: AppState
+            Session state of the application
+        prominence: float | None, default=None
+            Prominence, see `scipy.signal.find_peaks()`.
+            If `None`, a prominence is estimated from the noise level
+        tol: float, default=0.5
+            Tolerance for detecting mass overlap
+        **peak_kwargs:
+            Passed to `scipy.signals.curve_fit`
+        
+        """
+        build_ir(self, prominence, tol, **kwargs)
+
+    def plot_spectrum(
+            self, 
+            spectrum_type: str, 
+            pointer: bool | None = None, 
+            pointer_value: float = 0.0
+        ) -> None:
+        """
+        Plot the mass/time spectrum.
+    
+        Parameters
+        ----------
+        spectrum_type: str ["time" or "mass"]
+            Determines the horizontal axis type.
+        pointer: bool
+            Should a vertical line be plotter as pointer?
+        pointer_value: float
+            Position of the pointer on the horizontal axis.
+
+        """
         plot_spec(self, spectrum_type, pointer, pointer_value)
+
+    def plot_ir(
+            self,
+            selected_masses,
+            mode,
+    ):
+        """
+        TODO
+
+        """
+        plot_ir(self, selected_masses, mode)  
 
 
 def get_state() -> AppState:
