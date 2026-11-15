@@ -1,0 +1,158 @@
+"""
+Application state for the FCS Visualiser
+
+A single AppState instance lives in st.session_state['app_state'] and is passed to functions that need it.
+
+"""
+
+import shutil
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+import toml
+
+from ._builders import build_dataframe, build_ir
+from ._plotters import plot_ir, plot_spec
+
+CONFIG_DIR = Path(__file__).parent.parent / "config"
+
+
+def _empty_dataframe() -> pd.DataFrame:
+    return pd.DataFrame({"time": [], "mass": [], "voltage": [], "name": []})
+ 
+ 
+def _empty_figure():
+    return px.line([])
+
+
+@dataclass
+class IntegrationMassSettings:
+    main_mass: float = 58.933
+    main_num: int = 40
+    messenger_mass: float = 18
+    messenger_num: int = 2
+
+
+@dataclass
+class AppState:
+    a: float
+    k: float
+
+    directory: Path = field(default_factory=Path.home)
+    data_files: list[str] = field(default_factory=list)
+    data_files_old: list[str] = field(default_factory=list)
+
+    dataframe: pd.DataFrame = field(default_factory=_empty_dataframe)
+    figure: object = field(default_factory=_empty_figure)
+
+    intmass: IntegrationMassSettings | None = None
+    ir_df = None
+    target_masses = None
+    ioff = None
+    ion = None
+
+    def build_dataframe(self) -> None:
+        """
+        Build DataFrame from selected files and rebuild `state.dataframe`
+    
+        """
+        build_dataframe(self)
+
+    def build_ir(
+            self, 
+            prominence: float | None = None,
+            tol: float = 0.5,
+            **kwargs,
+        ):
+        """
+        Build IR Spectrum from all files in selected directory
+        and update session state
+    
+        Parameters
+        ----------
+        state: AppState
+            Session state of the application
+        prominence: float | None, default=None
+            Prominence, see `scipy.signal.find_peaks()`.
+            If `None`, a prominence is estimated from the noise level
+        tol: float, default=0.5
+            Tolerance for detecting mass overlap
+        **peak_kwargs:
+            Passed to `scipy.signals.curve_fit`
+        
+        """
+        build_ir(self, prominence, tol, **kwargs)
+
+    def plot_spectrum(
+            self, 
+            spectrum_type: str, 
+            pointer: bool | None = None, 
+            pointer_value: float = 0.0
+        ) -> None:
+        """
+        Plot the mass/time spectrum.
+    
+        Parameters
+        ----------
+        spectrum_type: str ["time" or "mass"]
+            Determines the horizontal axis type.
+        pointer: bool
+            Should a vertical line be plotter as pointer?
+        pointer_value: float
+            Position of the pointer on the horizontal axis.
+
+        """
+        plot_spec(self, spectrum_type, pointer, pointer_value)
+
+    def plot_ir(
+            self,
+            selected_masses,
+            mode,
+    ):
+        """
+        TODO
+
+        """
+        plot_ir(self, selected_masses, mode)  
+
+
+def get_state() -> AppState:
+    """
+    Return the single AppState for this session, creating it on first run.
+    
+    """
+    if "state" not in st.session_state:
+        configs = _read_configs()
+        st.session_state["state"] = AppState(
+            a = configs["last_used"]["a"],
+            k = configs["last_used"]["k"],
+        )
+        
+    return st.session_state["state"]
+
+
+def _read_configs() -> dict:
+    """
+    Read the configuration files
+
+    Returns
+    -------
+    defaults: dict
+        Configuration settings
+    """
+    config_file = CONFIG_DIR / 'calibration.toml'
+    config_example = CONFIG_DIR / 'calibration.toml.example'
+
+    try:
+        with open(config_file, 'r') as f:
+            configs = toml.load(f)
+    except FileNotFoundError:
+        if not config_file.exists():
+            shutil.copy(config_example, config_file)
+
+            with open(config_file, "r") as f:
+                configs = toml.load(f)
+    return configs

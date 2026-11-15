@@ -1,13 +1,34 @@
-"""Plot generation for the FCS Visualiser."""
- 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
 
-from .state import AppState
+from fcs_studio.tools.ir_tools import split_states
+
+if TYPE_CHECKING:
+    from fcs_studio.app_state._app_state import AppState
 
 
-def generate_fig(state: AppState, spectrum_type: str, pointer: bool, pointer_value: float):
+def plot_spec(state: AppState, spectrum_type: str, pointer: bool, pointer_value: float) -> None:
+    """
+    Plot the mass/time spectrum.
+
+    Parameters
+    ----------
+    state: AppState
+        Session state of the application
+    spectrum_type: str ["time" or "mass"]
+        Determines the horizontal axis type.
+    pointer: bool
+        Should a vertical line be plotter as pointer?
+    pointer_value: float
+        Position of the pointer on the horizontal axis.
+
+    """
     def prepare_axes(fig, xlabel, ylabel):
         fig.update_layout(
             xaxis_title=xlabel,
@@ -20,7 +41,7 @@ def generate_fig(state: AppState, spectrum_type: str, pointer: bool, pointer_val
  
     if spectrum_type == "time":
         fig = px.line(state.dataframe, x="time", y="voltage", color="name")
-        prepare_axes(fig, "time (us)", "accumulated voltage (V)")
+        prepare_axes(fig, "time (μs)", "accumulated voltage (V)")
     else:  # mass
         fig = px.line(state.dataframe, x="mass", y="voltage", color="name")
         prepare_axes(fig, "mass (amu)", "accumulated voltage (V)")
@@ -28,12 +49,44 @@ def generate_fig(state: AppState, spectrum_type: str, pointer: bool, pointer_val
     if pointer:
         fig.add_vline(pointer_value, line_dash="dash", line_color="red")
  
-    return fig
+    st.plotly_chart(fig, width='stretch')
 
 
-def plot_on_off_difference(wavelengths, ioff, ion, targets, mode):
+def plot_ir(state: AppState, selected_masses: list[float], mode: str) -> None:
+    """
+    Plot the IR spectrum of the selected masses.
+
+    Parameters
+    ----------
+    state: AppState
+        Session state of the application, containing `ir_df`
+    selected_masses: list[float]
+        Masses (columns of `ir_df`) to plot
+    mode: str ["diff" or "depl"]
+        Plot the difference (on - off) or the depletion, -ln(on / off)
+
+    """
+    states = split_states(state.ir_df)
+    if states is None:
+        st.warning("Both IR and noIR files are needed to plot an IR spectrum.")
+        return
+    on, off = states
+
+    masses = list(selected_masses)
+    fig = _generate_ir_figure(
+        list(off.index),
+        off[masses].to_numpy().T,   # shape (n_masses, n_wavelengths)
+        on[masses].to_numpy().T,
+        masses,
+        mode,
+    )
+    st.plotly_chart(fig, width='stretch')
+
+
+def _generate_ir_figure(wavelengths, ioff, ion, targets, mode):
     diff = ion - ioff  # shape (n_targets, n_wavelengths)
-    depl = -np.log(ion / ioff)
+    with np.errstate(divide="ignore", invalid="ignore"):   # baseline-corrected signals can be <= 0
+        depl = -np.log(ion / ioff)
     
     fig = go.Figure()
     if mode == "diff":
@@ -42,7 +95,7 @@ def plot_on_off_difference(wavelengths, ioff, ion, targets, mode):
                 x=wavelengths,
                 y=diff[i, :],
                 mode="lines+markers",
-                name=f"m/z {mass}",
+                name=f"m/z {mass:.2f}",
                 xaxis="x",
             ))
 
@@ -53,7 +106,7 @@ def plot_on_off_difference(wavelengths, ioff, ion, targets, mode):
                 x=wavelengths,
                 y=depl[i, :],
                 mode="lines+markers",
-                name=f"m/z {mass}",
+                name=f"m/z {mass:.2f}",
                 xaxis="x",
             ))
 
