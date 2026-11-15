@@ -1,6 +1,6 @@
 import numpy as np
 
-from ._ulrik import ulrik
+from ._gelius import gelius
 
 _PROTON = 1.007276  # Mass of a proton
 
@@ -43,4 +43,4 @@ def c60(
 
     """
     hs = (h0, h1, h2, h3)
-    return sum(ulrik(x, h, center + i*_PROTON, width, a, b) for i, h in enumerate(hs))
+    return sum(gelius(x, h, center + i*_PROTON, width, a, b) for i, h in enumerate(hs))

@@ -1,13 +1,14 @@
-"""
-Filter the stable and physical signals.
+from __future__ import annotations
 
-"""
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from app.state import AppState
+if TYPE_CHECKING:
+    from fcs_studio.app_state._app_state import AppState
 
 
-def filter(state: AppState, m_threshold: float, cv_threshold: float):
+def filter_signal(state: AppState, m_threshold: float, cv_threshold: float):
     """
     Filter the stable and physical signals, based on thresholds.
 
@@ -28,8 +29,8 @@ def filter(state: AppState, m_threshold: float, cv_threshold: float):
 
     Returns
     -------
-    valid_masses: ndarray
-        array of the masses that pass the filter    
+    valid_masses: list
+        list of the masses that pass the filter    
     
     """
     used_masses = np.asarray(state.target_masses)
@@ -40,4 +41,4 @@ def filter(state: AppState, m_threshold: float, cv_threshold: float):
     cv_mask = (np.mean(state.ioff[nan_mask], axis=1) > m_threshold) & (cv < cv_threshold)
 
     valid_masses = valid_masses[cv_mask]
-    return valid_masses
+    return list(np.round(valid_masses, 2))
