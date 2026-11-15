@@ -134,7 +134,7 @@ class MassSpec:
 
     def find_peaks(
                 self,
-                mass_range: tuple[float, float] | None,
+                mass_range: tuple[float, float] | None = None,
                 prominence: float | None = None,
                 **kwargs,
         ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict]:
@@ -165,7 +165,7 @@ class MassSpec:
             if mass_range is None:
                 mass, voltage = self.mass, self.voltage
             else:
-                mass, voltage = self._apply_mass_range(mass_range)
+                mass, voltage = self.mass_filter(mass_range)
     
             if prominence is None:
                 # robust noise estimate -> threshold at ~5 sigma

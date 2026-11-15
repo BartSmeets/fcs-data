@@ -29,7 +29,7 @@ def main():
     )
 
     with st.expander("Files"):
-        files = state.directory.glob("*.npy")
+        files = sorted(path.name for path in state.directory.glob("*.npy"))
         st.dataframe(files)
 
     # Buttons
@@ -76,6 +76,7 @@ def main():
             "Masses to show",
             options = valid_masses,   # only offer masses that actually have data
             default = valid_masses,
+            format_func = lambda m: f"{m:.2f}",
         )
 
         state.plot_ir(selected_masses, mode)

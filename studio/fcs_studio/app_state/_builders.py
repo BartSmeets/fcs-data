@@ -92,6 +92,7 @@ def build_ir(
         mass_spectra.append((wavelength, onoff, massspec))
 
     if not mass_spectra:
+        st.warning("No files named `<prefix>_<value>_<IR|noIR>.npy` found in this directory.")
         return
 
     # Pass 1: Find peaks
@@ -100,9 +101,10 @@ def build_ir(
         for _, _, ms in mass_spectra
     ]
     all_masses = np.concatenate([f[0] for f in found])
-    all_widths = np.concatenate([f[3] for f in found])
+    all_widths = np.concatenate([f[2] for f in found])
     
     if all_masses.size == 0:
+        st.warning("No peaks found. Try a lower prominence.")
         return
     mass_axis, width_axis = _clean_masses(all_masses, all_widths, tol=tol)
 
@@ -115,13 +117,13 @@ def build_ir(
         ]
 
         # Store data
-        frames.append({
-            "file": file,
+        frames.append(pd.DataFrame({
+            "file": ms.file.name,
             "wavelength": wavelength,
             "state": onoff,
             "mass": mass_axis,
             "intensity": integrals,
-        })
+        }))
 
     long = pd.concat(frames, ignore_index=True)
 
@@ -159,7 +161,10 @@ def _parse_filename(file: Path):
     if match is None:
         return None
 
-    return (float(match.group(1)), match.group(2).lower())
+    try:
+        return (float(match.group(1)), match.group(2).lower())
+    except ValueError:   # e.g. "scan_abc_IR.npy"
+        return None
 
 
 def _clean_masses(

@@ -7,6 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from fcs_studio.tools.ir_tools import split_states
+
 if TYPE_CHECKING:
     from fcs_studio.app_state._app_state import AppState
 
@@ -50,14 +52,32 @@ def plot_spec(state: AppState, spectrum_type: str, pointer: bool, pointer_value:
     st.plotly_chart(fig, width='stretch')
 
 
-def plot_ir(state: AppState, selected_masses, mode):
-    idx = [int(np.where(np.asarray(np.round(state.target_masses, 2)) == m)[0][0]) 
-                for m in selected_masses]
+def plot_ir(state: AppState, selected_masses: list[float], mode: str) -> None:
+    """
+    Plot the IR spectrum of the selected masses.
+
+    Parameters
+    ----------
+    state: AppState
+        Session state of the application, containing `ir_df`
+    selected_masses: list[float]
+        Masses (columns of `ir_df`) to plot
+    mode: str ["diff" or "depl"]
+        Plot the difference (on - off) or the depletion, -ln(on / off)
+
+    """
+    states = split_states(state.ir_df)
+    if states is None:
+        st.warning("Both IR and noIR files are needed to plot an IR spectrum.")
+        return
+    on, off = states
+
+    masses = list(selected_masses)
     fig = _generate_ir_figure(
-        sorted(state.files_df.wave.unique()),
-        state.ioff[idx, :],
-        state.ion[idx, :],
-        selected_masses,
+        list(off.index),
+        off[masses].to_numpy().T,   # shape (n_masses, n_wavelengths)
+        on[masses].to_numpy().T,
+        masses,
         mode,
     )
     st.plotly_chart(fig, width='stretch')
@@ -65,7 +85,8 @@ def plot_ir(state: AppState, selected_masses, mode):
 
 def _generate_ir_figure(wavelengths, ioff, ion, targets, mode):
     diff = ion - ioff  # shape (n_targets, n_wavelengths)
-    depl = -np.log(ion / ioff)
+    with np.errstate(divide="ignore", invalid="ignore"):   # baseline-corrected signals can be <= 0
+        depl = -np.log(ion / ioff)
     
     fig = go.Figure()
     if mode == "diff":
@@ -74,7 +95,7 @@ def _generate_ir_figure(wavelengths, ioff, ion, targets, mode):
                 x=wavelengths,
                 y=diff[i, :],
                 mode="lines+markers",
-                name=f"m/z {mass}",
+                name=f"m/z {mass:.2f}",
                 xaxis="x",
             ))
 
@@ -85,7 +106,7 @@ def _generate_ir_figure(wavelengths, ioff, ion, targets, mode):
                 x=wavelengths,
                 y=depl[i, :],
                 mode="lines+markers",
-                name=f"m/z {mass}",
+                name=f"m/z {mass:.2f}",
                 xaxis="x",
             ))
 

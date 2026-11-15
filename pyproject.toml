@@ -14,9 +14,19 @@ authors = [
 ]
 
 dependencies = [
-    "numpy",
-    "matplotlib",
+    "numpy>=2.0",
+    "scipy",
     "lmfit",
+    "pybaselines",
+]
+
+[project.optional-dependencies]
+# Extra dependencies for the FCS Studio app: pip install -e ".[studio]"
+studio = [
+    "streamlit",
+    "plotly",
+    "pandas",
+    "toml",
 ]
 
 [project.urls]
