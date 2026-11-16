@@ -28,6 +28,11 @@ studio = [
     "pandas",
     "toml",
 ]
+# Extra dependencies for the example notebooks: pip install -e ".[examples]"
+examples = [
+    "matplotlib",
+    "jupyterlab",
+]
 
 [project.urls]
 Repository = "https://github.com/BartSmeets/fcs-data"

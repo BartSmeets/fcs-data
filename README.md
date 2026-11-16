@@ -10,6 +10,7 @@ Python package for handling FCS mass spectrometry data: from reading the raw dat
 - Integration of mass ranges
 - Peak finding
 - Peak fitting with [`lmfit`](https://lmfit.github.io/lmfit-py/), including ready-made lineshapes (`c60`, `gelius`)
+- [Example notebooks](#examples) that walk through the workflow, from loading data to peak fitting
 - [FCS Studio](#fcs-studio): an interactive [Streamlit](https://streamlit.io/) app to browse, calibrate and visualise your data
 
 ## Installation
@@ -28,6 +29,13 @@ To also run the [FCS Studio](#fcs-studio) app, install the optional `studio` dep
 pip install -e ".[studio]"
 ```
 
+To run the [example notebooks](#examples), install the optional `examples` dependencies. Extras can be combined:
+
+```bash
+pip install -e ".[examples]"
+pip install -e ".[studio,examples]"   # both
+```
+
 ### Requirements
 
 - Python 3.10+
@@ -37,6 +45,7 @@ pip install -e ".[studio]"
 - [pybaselines](https://pybaselines.readthedocs.io/)
 
 The `studio` extra additionally installs [Streamlit](https://streamlit.io/), [Plotly](https://plotly.com/python/), [pandas](https://pandas.pydata.org/) and [toml](https://github.com/uiri/toml).
+The `examples` extra installs [Matplotlib](https://matplotlib.org/) and [JupyterLab](https://jupyterlab.readthedocs.io/).
 
 ## API overview
 
@@ -133,6 +142,26 @@ print(result.fit_report())
 ```
 
 If `model_params` is omitted, the model's own default parameters are used. The mass range must be ascending, otherwise a `ValueError` is raised.
+
+For a complete worked example, including fitting two overlapping peaks, see the [peak fitting notebook](#examples).
+
+## Examples
+
+The [`examples`](examples/) folder contains Jupyter notebooks that show how to use the package on real data.
+
+| Notebook                                             | Description                                                                                                                                                                                                              |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`peak_fitting.ipynb`](examples/peak_fitting.ipynb)   | Load and calibrate a mass spectrum, plot it, and fit a non-overlapping C₆₀Nbₙ⁺ peak with the `c60` lineshape. The result is then used as a reference to fit two overlapping C₆₀Nbₙ[D₂]⁺ peaks. |
+
+The two spectra used by the notebook are stored in [`examples/data`](examples/data/).
+
+To run them, install the `examples` extra (see [Installation](#installation)) and start JupyterLab from the `examples` folder, because the notebooks load their data with relative paths:
+
+```bash
+pip install -e ".[examples]"
+cd examples
+jupyter lab
+```
 
 ## FCS Studio
 
